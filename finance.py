@@ -24,27 +24,30 @@ def get_returns(database):
 
 bmth_us = CustomBusinessMonthBegin(calendar=USFederalHolidayCalendar())
 
-start_date = '2015-01-01'
+#SAMPLE PERIOD: from 2015 to 2021
+start_date = '2015-01-01' 
 end_date = '2021-04-13'
 
-# +++STEP 1: FORM THE PORTFOLIO
+# ++++ STEP 1: FORM THE PORTFOLIO
 
 # Load the desired data
-symbols = ['^GSPC', 'XAR', 'IOO', 'DIA', 'AGG']
+symbols = ['^GSPC', 'XAR', 'IOO', 'DIA', 'AGG'] #These are the stock tickers of the chosen ETFs. "^GSPC" is S&P500, which is our market portfolio benchmark. 
 database = {}
 
-for symbol in symbols:
+#Collect the data from Yahoo Finance:
+for symbol in symbols: 
     database[symbol] = {'data': data.DataReader(symbol, 'yahoo', start_date, end_date)}
     print(f'{symbol} data loaded')
 
-# +++STEP 2: CONVERT DAILY ADJUSTED PRICES TO MONTHLY LOG RETURNS
+# ++++ STEP 2: CONVERT DAILY ADJUSTED PRICES TO MONTHLY LOG RETURNS
 
 for symbol in symbols:
     monthly = database[symbol]['data'].resample(bmth_us).mean()
     database[symbol]['monthly_log_returns'] = np.log(monthly['Adj Close'] / monthly['Adj Close'].shift(1))
 
-# STEP 3: CONSTRUCT A PORTFOLIO and CALCULATE PORTFOLIO RETURNS FOR EACH MONTHS
+# ++++ STEP 3: CONSTRUCT A PORTFOLIO and CALCULATE PORTFOLIO RETURNS FOR EACH MONTHS
 
+ 
 while True:
     total_allocation = 0
     for symbol in symbols:
@@ -52,14 +55,15 @@ while True:
             answer = None
             while not answer:
                 try:
-                    answer = float(input(f'Please insert the weight for {symbol} (example 0.25): '))
+                    answer = float(input(f'Please insert the weight for {symbol} (example 0.25): ')) #Input the desired weights for our portfolio
                 except ValueError:
                     answer = -1
                 database[symbol]['allocation'] = answer
-                if answer < 0 or answer > 1:
+                if answer < 0 or answer > 1: #Weight cannot be lower than 0 or higher than 1
                     print('Please insert a valid weight between 0 and 1')
                     answer = None
-            total_allocation += float(answer)
+            total_allocation += float(answer) #We have to verifity whether this variable is equal to one before going on
+#++++ STEP 4: USE CAPM formula to ESTIMATE THE BETA OF THE PORTFOLIO
     if total_allocation == 1.0:
         returns = get_returns(database)
         X = database['^GSPC']['monthly_log_returns'].dropna()
@@ -68,7 +72,7 @@ while True:
         model = sm.OLS(y, X1)
         results = model.fit()
         print(results.summary())
-        print(f"The beta is {results.params[1]}")
+        print(f"The beta is {results.params[1]}") #Beta of the portfolio
         input('Press enter to start again...')
     else:
         print('The weights you chose do not sum up to 1. Please, try again. ')
